@@ -10,11 +10,11 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##Overview
+## Overview
 This project will investigate the exponential distribution in R and compare it with the Central Limit Theorem. The exponential distribution can be simulated in R with `rexp(n, lambda)` where lambda is the rate parameter. The mean of exponential distribution is $\frac{1}{\lambda}$ and the standard deviation is also $\frac{1}{\lambda}$. Setting $\lambda = \frac{1}{5}$ for all of the simulations. The project will investigate the distribution of averages of 40 exponentials over a thousand simulations.
 
 
-##Setting the evironment
+## Setting the evironment
 Loading necessary libraries to perform loading and plotting. Setting seed so project is fully reproducible.
 
 ```{r, message==FALSE}
@@ -24,7 +24,7 @@ library(ggplot2)
 set.seed(1990)
 ```
 
-##Simulation
+## Simulation
 Setting the parameters for the simulated exponential distribution, and taking the mean of 40 outcomes, over 1000 trials and storing the means in a `data.table`.
 
 ```{r}
@@ -36,7 +36,7 @@ expo_simu <- matrix(rexp(simulations * n, lambda), nrow = simulations)
 expo_means <- data.table(means = apply(expo_simu,1,mean))
 ```
 
-##Means
+## Means
 The theoretical mean of an exponential distribution is $\mu =\frac{1}{\lambda} = \frac{1}{1/5} = 5$. In the simulation the mean was found to be.
 
 ```{r}
@@ -62,7 +62,7 @@ cat("95% Confidence Interval\n",paste0(round(lower_conf,digits = 3),
                                        ", ", round(upper_conf, digits = 3)))
 ```
 
-##Variance
+## Variance
 As with the mean, the variance can be compared in the same manner. The theoretical variance ($\sigma^2$) is $$\sigma^2 = \Big(\frac{\frac{1}{\lambda}}{\sqrt{n}}\Big)^2 = \Big(\frac{\frac{1}{1/5}}{\sqrt{40}}\Big)^2 = \frac{25}{5\cdot 8} = \frac{5}{8} =.625$$
 
 ```{r}
@@ -80,7 +80,7 @@ var_pe <- abs((theor_var - exp_var)/theor_var)*100
 cat("Percentage of Error\n",paste(round(var_pe,digits = 3),"%"))
 ```
 
-##Distribution
+## Distribution
 The simulation produces an approximate to the normal distribution, with the experimental mean and variance in close proximity to the theoretical values. The graph below shows the density plot of the means of the 1000 simulations as it compares to the normal distribution.
 
 ```{r}
