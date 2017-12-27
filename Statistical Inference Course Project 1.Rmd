@@ -14,10 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 This project will investigate the exponential distribution in R and compare it with the Central Limit Theorem. The exponential distribution can be simulated in R with `rexp(n, lambda)` where lambda is the rate parameter. The mean of exponential distribution is $\frac{1}{\lambda}$ and the standard deviation is also $\frac{1}{\lambda}$. Setting $\lambda = \frac{1}{5}$ for all of the simulations. The project will investigate the distribution of averages of 40 exponentials over a thousand simulations.
 
 
-## Setting the evironment
+## Setting the environment
 Loading necessary libraries to perform loading and plotting. Setting seed so project is fully reproducible.
 
-```{r, message==FALSE}
+```{r, message=FALSE}
 library(data.table)
 library(ggplot2)
 

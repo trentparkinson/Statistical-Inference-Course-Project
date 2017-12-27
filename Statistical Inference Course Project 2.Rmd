@@ -1,0 +1,189 @@
+---
+title: "Statistical Inference on Tooth Growth Dataset"
+author: "Trent Parkinson"
+date: "December 26, 2017"
+output:
+  pdf_document
+header-includes:
+    - \usepackage{caption}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+\captionsetup[table]{labelformat=empty}
+
+## Overview
+
+The project provides a basic analysis of the `ToothGrowth` data in the R datasets package. The data gives the length of the odontoblast (teeth) in each of 10 guinea pigs at three different dosage levels (0.5, 1, and 2 mg) with two supplements (Vitamin C and Orange Juice). The following will occur;
+
+- Loads the ToothGrowth data and perform some basic exploratory data analyses.
+- Provide a basic summary of the data.
+- Use confidence intervals and t-tests to compare tooth growth by `supp` and `dose`.
+- States conclusions and any assumptions made.
+
+## Setting up environment
+
+Necessary libraries for loading, manipulating, and plotting. Reading the `ToothGrowth` dataset into a `data.table`.
+\vspace{4pt}
+```{r, message=FALSE}
+
+library(data.table)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(printr)
+
+data("ToothGrowth")
+tooth_growth <- data.table(ToothGrowth)
+```
+
+## Data Structure
+
+```{r}
+
+str(tooth_growth)
+head(tooth_growth)
+```
+
+## Brief Summary
+
+\vspace{4pt}
+```{r}
+
+summary(tooth_growth)
+```
+
+## Visualizations
+
+Setting the `dose` variable as factors to make the plotting and t-tests easier. Plotting a grid of box plots for all the different combinations of `len` as it depends on `supp` and `dose`.
+\vspace{4pt}
+```{r}
+
+tooth_growth$dose <- as.factor(tooth_growth$dose)
+
+plot1 <- ggplot(data = tooth_growth, aes(x = dose, y = len)) + 
+    geom_boxplot(aes(fill = dose)) + 
+    facet_grid(.~supp) +
+    theme(legend.position = "None") +
+    xlab(" ") + ylab("Length")
+
+plot2 <- ggplot(data = tooth_growth, aes(x = supp, y = len)) +
+    geom_boxplot(aes(fill = supp)) +
+    facet_grid(.~dose) +
+    theme(legend.position = "None") +
+    xlab(" ") + ylab(" ")
+
+plot3 <- ggplot(data = tooth_growth, aes(x = supp, y = len)) +
+    geom_boxplot(aes(fill = supp)) +
+    theme(legend.position = "None") +
+    xlab("Supplement") + ylab(" ")
+
+plot4 <- ggplot(data = tooth_growth, aes(x = dose, y = len)) +
+    geom_boxplot(aes(fill = dose)) +
+    theme(legend.position = "None") +
+    xlab("Dosage (mg)") + ylab("Length")
+
+grid.arrange(plot1, plot2, plot4, plot3, nrow = 2, ncol = 2)
+```
+
+## Analysis
+
+The goal of the project is to analyze the effect of the different supplements (Vitamin C and Orange Juice) at all of the dose levels (0.5, 1, 2 mg). The following is the code used to perform all the different combinations of t-tests. All of the test were performed using a $95\%$ confidence level, with unequal variances assumed.
+\vspace{4pt}
+```{r}
+
+OJvsVC <- t.test(len ~ supp, data = tooth_growth)
+
+my.t.test <- function(fac1,fac2) {
+    t.test(tooth_growth$len[tooth_growth$dose == fac1],
+           tooth_growth$len[tooth_growth$dose == fac2])
+}
+
+supp.t.test <- function(supp1,dose1,supp2,dose2) {
+    sub_tooth <- filter(tooth_growth, (dose == as.numeric(dose1) & supp == supp1 ) |
+                            dose == as.numeric(dose2) & supp == supp2)
+    t.test(len ~ supp, data=sub_tooth)
+}
+
+same_supp.t.test <- function(supp1,dose1,dose2) {
+    sub_tooth <- filter(tooth_growth, (dose == as.numeric(dose1) & supp == supp1 ) |
+                            dose == as.numeric(dose2) & supp == supp1)
+    t.test(len ~ dose, data=sub_tooth)
+}
+
+my_tests <- mapply(FUN = my.t.test,c(.5,.5,1.0),c(1.0,2.0,2.0),SIMPLIFY = FALSE)
+
+d1 <- c(0.5,1.0,2.0,0.5,0.5,1.0,2.0,1.0,2.0)
+d2 <- c(0.5,0.5,0.5,1.0,2.0,1.0,1.0,2.0,2.0)
+supp_tests <- mapply(FUN = supp.t.test,rep("VC",9),d1,rep("OJ",9),d2,SIMPLIFY = FALSE)
+
+d3 <- rep(c("OJ","VC"),each = 3)
+d4 <- rep(c(1.0,2.0,2.0), times = 2)
+d5 <- rep(c(0.5,0.5,1.0), times = 2)
+same_supp_tests <- mapply(FUN = same_supp.t.test,d3,d4,d5,SIMPLIFY = FALSE)
+```
+
+### Results for t-test
+
+The following code takes all of the t-test results from the previous section and places them in a `data.frame` for easier readability, and quicker viewing. Note that all values have been rounded to four decimal places.
+\vspace{8pt}
+```{r,tab.cap = NULL}
+
+t_table <- list(OJvsVC)
+t_table <- append(t_table,my_tests)
+t_table <- append(t_table,same_supp_tests)
+t_table <- append(t_table,supp_tests)
+
+t.stat = c(); df = c(); lower.CL = c(); upper.CL = c()
+p.value = c(); mean.A = c(); mean.B = c()
+
+rnames <- c("VC vs OJ",
+            "1.0 vs 0.5","2.0 vs 0.5","2.0 vs 1.0",
+            "OJ-1.0 vs 0.5","OJ-2.0 vs 0.5","OJ-2.0 vs 1.0",
+            "VC-1.0 vs 0.5","VC-2.0 vs 0.5","VC-2.0 vs 1.0",
+            "VC-0.5 vs OJ-0.5","VC-1.0 vs OJ-0.5","VC-2.0 vs OJ-0.5",
+            "VC-0.5 vs OJ-1.0","VC-0.5 vs OJ-2.0","VC-1.0 vs OJ-1.0",
+            "VC-2.0 vs OJ-1.0","VC-1.0 vs OJ-2.0","VC-2.0 vs OJ-2.0")
+
+for (i in 1:19) {
+    t.stat <- append(t.stat,c(t_table[[i]]$statistic))
+    df <- append(df,c(t_table[[i]]$parameter))
+    lower.CL <- append(lower.CL,c(t_table[[i]]$conf.int[1]))
+    upper.CL <- append(upper.CL,c(t_table[[i]]$conf.int[2]))
+    p.value <- append(p.value,c(t_table[[i]]$p.value))
+    mean.B <- append(mean.B,c(t_table[[i]]$estimate[1]))
+    mean.A <- append(mean.A,c(t_table[[i]]$estimate[2]))
+}
+
+mean.diff <- mean.A - mean.B
+
+t_results <- data.frame("t.stat" = t.stat, "df" = df,
+                      "lower.CL" = lower.CL, "upper.CL" = upper.CL,
+                      "p.value" = p.value, "mean.A" = mean.A,
+                      "mean.B" = mean.B, "mean.diff" = mean.diff,
+                      row.names = rnames)
+
+knitr::kable(round(t_results,4), caption = "Welch Two Sample t-test Results")
+```
+
+### Conclusions for t-test
+
+Therefore the tests failed to reject the null-hypothesis (difference in means is equal to zero) in three of the cases. Since all test were held on a $95\%$ confidence level, any values with a p-value greater than $0.05$ or the confidence intervals contains the value zero will fail to reject. The results are,
+
+- `VC vs OJ`, p-value of $0.0606$
+- `VC-2.0 vs OJ-1.0`, p-value of $0.0965$
+- `VC-2.0 vs OJ-2.0`, p-value of $0.9639$
+
+## Final Conclusions
+
+Based on the analysis performed we can conclude that as `dose` levels increase the tooth growth also increases. We can also conclude at the lower dose levels there is a statistical difference in the means of the 0.5 and 1.0 mg dose levels for `OJ` and `VC` with `OJ` being more effective on tooth growth, but at 2.0 mg `OJ` and `VC` has no significant difference. 
+
+Further study could be conducted to see if higher dosages (above 2.0 mg) would be more effective for `VC` or `OJ`. The mean of `OJ` seems to be decreasing at a higher rate than `VC` and can be seen in the difference of means for the dose levels. `VC` may be more effective than `OJ` at higher levels.
+
+These assumptions are based on the following:
+
+- The sample is representative of the population
+- Independent variables were randomly assigned
+- The distribution of the means is normal
+
